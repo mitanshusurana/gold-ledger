@@ -79,7 +79,7 @@ export default function NewTransaction() {
       // Auto-calculate amount if rate is provided
       if (rate && calculatedPureWeight) {
         const calculatedAmount = calculatedPureWeight * rate
-        form.setValue("amount", calculatedAmount)
+        form.setValue("amount", roundToNearest5(calculatedAmount))
       }
     } else {
       setPureWeight(null)
@@ -132,8 +132,8 @@ export default function NewTransaction() {
     return Math.floor(value * 1000) / 1000
   }
 
-  const roundToNearest5 = (amount: number | null | undefined): number | null => {
-    if (amount === null || amount === undefined) return null
+  const roundToNearest5 = (amount: number ): number => {
+
     return Math.round(amount / 5) * 5
   }
 
@@ -166,9 +166,7 @@ export default function NewTransaction() {
     const receiptContent = document.querySelector(".dialog-content")
     if (receiptContent) {
       const clone = receiptContent.cloneNode(true)
-      clone.classList.add("receipt-copy")
-      clone.setAttribute("style", "page-break-before: always; margin-top: 10mm;")
-
+      
       // Temporarily append the clone
       document.body.appendChild(clone)
 

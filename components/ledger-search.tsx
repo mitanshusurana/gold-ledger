@@ -47,36 +47,37 @@ export function LedgerSearch({ onLedgerSelect, selectedLedger, initialLedgerId }
     },
   });
 
+  // Load ledgers when search value changes
   useEffect(() => {
-    if (debouncedSearchValue) {
+    const fetchLedgers = async () => {
       setIsSearching(true);
-      getLedgers(debouncedSearchValue)
-        .then((ledgers) => {
-          setLedgers(ledgers);
-          setIsSearching(false);
-        })
-        .catch((error) => {
-          console.error('Error fetching ledgers:', error);
-          setIsSearching(false);
-        });
-    } else {
-      setLedgers([]);
+      try {
+        const results = await getLedgers(debouncedSearchValue);
+        setLedgers(results);
+      } catch (error) {
+        console.error('Error fetching ledgers:', error);
+      }
       setIsSearching(false);
-    }
+    };
+
+    fetchLedgers();
   }, [debouncedSearchValue]);
 
+  // Load initial ledger if provided
   useEffect(() => {
     if (initialLedgerId && !selectedLedger) {
-      getLedgers()
-        .then((ledgers) => {
-          const selectedLedger = ledgers.find((ledger) => ledger.id === initialLedgerId);
-          if (selectedLedger) {
-            onLedgerSelect(selectedLedger);
+      const fetchInitialLedger = async () => {
+        try {
+          const results = await getLedgers();
+          const initialLedger = results.find(ledger => ledger.id === initialLedgerId);
+          if (initialLedger) {
+            onLedgerSelect(initialLedger);
           }
-        })
-        .catch((error) => {
-          console.error('Error fetching ledgers:', error);
-        });
+        } catch (error) {
+          console.error('Error fetching initial ledger:', error);
+        }
+      };
+      fetchInitialLedger();
     }
   }, [initialLedgerId, selectedLedger, onLedgerSelect]);
 
@@ -96,6 +97,9 @@ export function LedgerSearch({ onLedgerSelect, selectedLedger, initialLedgerId }
       onLedgerSelect(newLedger);
       setDialogOpen(false);
       form.reset();
+      // Refresh ledger list
+      const updatedLedgers = await getLedgers();
+      setLedgers(updatedLedgers);
     } catch (error) {
       console.error('Error creating ledger:', error);
     }
@@ -112,11 +116,15 @@ export function LedgerSearch({ onLedgerSelect, selectedLedger, initialLedgerId }
         </PopoverTrigger>
         <PopoverContent className="w-[300px] p-0">
           <Command>
-            <CommandInput placeholder="Search ledgers..." value={searchValue} onValueChange={setSearchValue} />
+            <CommandInput 
+              placeholder="Search ledgers..." 
+              value={searchValue} 
+              onValueChange={setSearchValue}
+            />
             <CommandList>
               {isSearching ? (
                 <CommandEmpty>Searching...</CommandEmpty>
-              ) : ledgers.length === 0 && debouncedSearchValue ? (
+              ) : ledgers.length === 0 ? (
                 <CommandEmpty>
                   No ledger found.
                   <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -124,10 +132,10 @@ export function LedgerSearch({ onLedgerSelect, selectedLedger, initialLedgerId }
                       <Button
                         variant="outline"
                         className="mt-2 w-full"
-                        onClick={() => form.setValue("name", debouncedSearchValue)}
+                        onClick={() => form.setValue("name", searchValue)}
                       >
                         <Plus className="mr-2 h-4 w-4" />
-                        Create "{debouncedSearchValue}"
+                        Create "{searchValue}"
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
